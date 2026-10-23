@@ -44,7 +44,7 @@ def not_getir(not_id: int):
 
 
 @app.put("/notar/{not_id}")
-def notlari_güncelle(not_id: int, girdi: NotGirdisi):
+def notlari_guncelle(not_id: int, girdi: NotGirdisi):
     mevcut = not_bul(not_id)
     mevcut.update(girdi.model_dump())
     return mevcut
