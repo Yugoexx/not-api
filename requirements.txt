@@ -47,6 +47,7 @@ rich-toolkit==0.20.6
 rignore==0.8.1
 sentry-sdk==2.73.0
 shellingham==1.5.4
+SQLAlchemy==2.1.6
 starlette==1.9.0
 truststore==0.10.5
 typer==0.27.3
