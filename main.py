@@ -17,11 +17,7 @@ class NotGirdisi(BaseModel):
 class NotCikti(NotGirdisi):
     model_config = ConfigDict(from_attributes=True)
     id: int
-
-notlar: list[dict] = []
-sonraki_id = 1
-
-
+    
 @app.get("/")
 def anasayfa():
     return {"mesaj" : "Not Api çalışıyor"}
@@ -29,6 +25,7 @@ def anasayfa():
 
 @app.post("/notlar", status_code=201, response_model=NotCikti)
 def not_olustur(girdi: NotGirdisi, db: Session = Depends(get_db)):
+    yeni_not = Not(**girdi.model_dump())
     db.add(yeni_not)
     db.commit()
     db.refresh(yeni_not)
