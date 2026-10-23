@@ -9,6 +9,9 @@ from models import Not
 from models import Kullanici, Not
 from guvenlik import sifre_hashle
 
+from fastapi.security import OAuth2PasswordRequestForm
+from guvenlik import sifre_dogrula, sifre_hashle, token_olustur
+
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Not Api")
@@ -29,6 +32,10 @@ class KullaniciCikti(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
     kullanici_adi: str
+
+class TokenCikti(BaseModel):
+    access_token: str
+    token_type: str
 
 @app.get("/")
 def anasayfa():
@@ -94,3 +101,21 @@ def kayit_ol(girdi: KullaniciGirdisi, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(yeni)
     return yeni
+
+
+@app.post("/giris", response_model=TokenCikti)
+def giris_yap(
+    form: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db),
+):
+    kullanici = db.scalar(
+        select(Kullanici).where(Kullanici.kullanici_adi == form.username)
+    )
+    if kullanici is None or not sifre_dogrula(form.password, kullanici.sifre_hash):
+        raise HTTPException(
+            status_code=401,
+            detail="Kullanıcı adı veya şifre hatalı",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return {"access_token": token_olustur(kullanici.id), "token_type": "bearer"}
+
