@@ -6,6 +6,9 @@ from sqlalchemy.orm import Session
 from database import Base, engine, get_db
 from models import Not
 
+from models import Kullanici, Not
+from guvenlik import sifre_hashle
+
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Not Api")
@@ -17,7 +20,16 @@ class NotGirdisi(BaseModel):
 class NotCikti(NotGirdisi):
     model_config = ConfigDict(from_attributes=True)
     id: int
-    
+
+class KullaniciGirdisi(BaseModel):
+    kullanici_adi: str
+    sifre: str
+
+class KullaniciCikti(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    kullanici_adi: str
+
 @app.get("/")
 def anasayfa():
     return {"mesaj" : "Not Api çalışıyor"}
@@ -64,3 +76,21 @@ def notu_guncelle(not_id: int, girdi: NotGirdisi, db: Session = Depends(get_db))
 def not_sil(not_id: int, db: Session = Depends(get_db)):
     db.delete(not_bul(not_id, db))
     db.commit()
+
+
+@app.post("/kayit", status_code=201, response_model=KullaniciCikti)
+def kayit_ol(girdi: KullaniciGirdisi, db: Session = Depends(get_db)):
+    mevcut = db.scalar(
+        select(Kullanici).where(Kullanici.kullanici_adi == girdi.kullanici_adi)
+    )
+    if mevcut is not None:
+        raise HTTPException(status_code=409, detail="Bu kullanıcı adı alınmış")
+
+    yeni = Kullanici(
+        kullanici_adi=girdi.kullanici_adi,
+        sifre_hash=sifre_hashle(girdi.sifre),
+    )
+    db.add(yeni)
+    db.commit()
+    db.refresh(yeni)
+    return yeni
