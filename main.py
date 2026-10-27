@@ -44,8 +44,12 @@ def anasayfa():
 
 
 @app.post("/notlar", status_code=201, response_model=NotCikti)
-def not_olustur(girdi: NotGirdisi, db: Session = Depends(get_db)):
-    yeni_not = Not(**girdi.model_dump())
+def not_olustur(
+    girdi: NotGirdisi,
+    db: Session = Depends(get_db),
+    kullanici: Kullanici = Depends(mevcut_kullanici),
+):
+    yeni_not = Not(**girdi.model_dump(), kullanici_id=kullanici.id)
     db.add(yeni_not)
     db.commit()
     db.refresh(yeni_not)
@@ -53,12 +57,17 @@ def not_olustur(girdi: NotGirdisi, db: Session = Depends(get_db)):
 
 
 @app.get("/notlar", response_model=list[NotCikti])
-def notlari_listele(db: Session = Depends(get_db)):
-    return db.scalars(select(Not)).all()
+def notlari_listele(
+    db: Session = Depends(get_db),
+    kullanici: Kullanici = Depends(mevcut_kullanici),
+):
+    return db.scalars(select(Not).where(Not.kullanici_id == kullanici.id)).all()
 
 
-def not_bul(not_id: int, db: Session) -> Not:
-    bulunan = db.get(Not, not_id)
+def not_bul(not_id: int, db: Session, kullanici: Kullanici) -> Not:
+    bulunan = db.scalar(
+        select(Not).where(Not.id == not_id, Not.kullanici_id == kullanici.id)
+    )
     if bulunan is None:
         raise HTTPException(status_code=404, detail="Not bulunamadı")
     return bulunan
@@ -66,13 +75,22 @@ def not_bul(not_id: int, db: Session) -> Not:
 
 
 @app.get("/notlar/{not_id}", response_model=NotCikti)
-def not_getir(not_id: int, db: Session = Depends(get_db)):
-    return not_bul(not_id, db)
+def not_getir(
+    not_id: int,
+    db: Session = Depends(get_db),
+    kullanici: Kullanici = Depends(mevcut_kullanici),
+):
+    return not_bul(not_id, db, kullanici)
 
 
 @app.put("/notlar/{not_id}", response_model=NotCikti)
-def notu_guncelle(not_id: int, girdi: NotGirdisi, db: Session = Depends(get_db)):
-    mevcut = not_bul(not_id, db)
+def notu_guncelle(
+    not_id: int,
+    girdi: NotGirdisi,
+    db: Session = Depends(get_db),
+    kullanici: Kullanici = Depends(mevcut_kullanici),
+):
+    mevcut = not_bul(not_id, db, kullanici)
     mevcut.baslik = girdi.baslik
     mevcut.icerik = girdi.icerik
     db.commit()
@@ -81,8 +99,12 @@ def notu_guncelle(not_id: int, girdi: NotGirdisi, db: Session = Depends(get_db))
 
 
 @app.delete("/notlar/{not_id}", status_code=204)
-def not_sil(not_id: int, db: Session = Depends(get_db)):
-    db.delete(not_bul(not_id, db))
+def not_sil(
+    not_id: int,
+    db: Session = Depends(get_db),
+    kullanici: Kullanici = Depends(mevcut_kullanici),
+):
+    db.delete(not_bul(not_id, db, kullanici))
     db.commit()
 
 

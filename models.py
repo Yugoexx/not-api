@@ -2,7 +2,7 @@ from sqlalchemy import String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from database import Base
-
+from sqlalchemy import ForeignKey, String, Text
 
 class Not(Base):
     __tablename__ = "notlar"
@@ -10,6 +10,7 @@ class Not(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     baslik: Mapped[str] = mapped_column(String(200))
     icerik: Mapped[str] = mapped_column(Text)
+    kullanici_id: Mapped[int] = mapped_column(ForeignKey("kullanicilar.id"))
 
 class Kullanici(Base):
     __tablename__ = "kullanicilar"
@@ -17,3 +18,4 @@ class Kullanici(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     kullanici_adi: Mapped[str] = mapped_column(String(50), unique=True)
     sifre_hash: Mapped[str] = mapped_column(String(255))
+
