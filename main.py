@@ -11,7 +11,8 @@ from guvenlik import sifre_hashle
 
 from fastapi.security import OAuth2PasswordRequestForm
 from guvenlik import sifre_dogrula, sifre_hashle, token_olustur
-
+from fastapi.security import OAuth2PasswordRequestForm
+from guvenlik import sifre_dogrula, sifre_hashle, token_olustur
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Not Api")
