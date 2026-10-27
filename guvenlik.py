@@ -24,3 +24,4 @@ def token_olustur(kullanici_id: int) -> str:
     bitis = datetime.now(timezone.utc) + timedelta(minutes=TOKEN_OMRU_DAKIKA)
     veri = {"sub": str(kullanici_id), "exp": bitis}
     return jwt.encode(veri, SECRET_KEY, algorithm=ALGORITHM)
+    
