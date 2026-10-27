@@ -1,21 +1,18 @@
 from fastapi import Depends, FastAPI, HTTPException
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from database import Base, engine, get_db
-from models import Not
-
-from models import Kullanici, Not
-from guvenlik import sifre_hashle
-
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from guvenlik import sifre_dogrula, sifre_hashle, token_coz, token_olustur
+from models import Kullanici, Not
 
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Not Api")
 oauth2_semasi = OAuth2PasswordBearer(tokenUrl="giris")
+
 
 class NotGirdisi(BaseModel):
     baslik: str
@@ -37,6 +34,20 @@ class KullaniciCikti(BaseModel):
 class TokenCikti(BaseModel):
     access_token: str
     token_type: str
+
+def mevcut_kullanici(
+    token: str = Depends(oauth2_semasi),
+    db: Session = Depends(get_db),
+) -> Kullanici:
+    kullanici_id = token_coz(token)
+    kullanici = db.get(Kullanici, kullanici_id) if kullanici_id is not None else None
+    if kullanici is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Geçersiz veya süresi dolmuş token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return kullanici
 
 @app.get("/")
 def anasayfa():
@@ -141,20 +152,6 @@ def giris_yap(
             headers={"WWW-Authenticate": "Bearer"},
         )
     return {"access_token": token_olustur(kullanici.id), "token_type": "bearer"}
-
-def mevcut_kullanici(
-    token: str = Depends(oauth2_semasi),
-    db: Session = Depends(get_db),
-) -> Kullanici:
-    kullanici_id = token_coz(token)
-    kullanici = db.get(Kullanici, kullanici_id) if kullanici_id is not None else None
-    if kullanici is None:
-        raise HTTPException(
-            status_code=401,
-            detail="Geçersiz veya süresi dolmuş token",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    return kullanici
 
 @app.get("/ben", response_model=KullaniciCikti)
 def ben(kullanici: Kullanici = Depends(mevcut_kullanici)):
